@@ -1248,6 +1248,7 @@ impl AppEndpoint {
 
         let is_app_page = matches!(this.ty, AppEndpointType::Page { .. });
 
+        // TODO replace with self.module_graphs()
         let module_graphs = this
             .app_project
             .app_module_graphs(
@@ -2133,13 +2134,19 @@ impl Endpoint for AppEndpoint {
     async fn module_graphs(self: Vc<Self>) -> Result<Vc<ModuleGraphs>> {
         let this = self.await?;
         let app_entry = self.app_endpoint_entry().await?;
+        let is_app_page = matches!(this.ty, AppEndpointType::Page { .. });
         let module_graphs = this
             .app_project
             .app_module_graphs(
                 self,
                 *app_entry.rsc_entry,
-                this.app_project.client_runtime_entries(),
-                matches!(this.ty, AppEndpointType::Page { .. }),
+                // We only need the client runtime entries for pages not for Route Handlers
+                if is_app_page {
+                    this.app_project.client_runtime_entries()
+                } else {
+                    EvaluatableAssets::empty()
+                },
+                is_app_page,
             )
             .await?;
         Ok(Vc::cell(vec![module_graphs.full]))
