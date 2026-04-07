@@ -71,7 +71,7 @@ function getPolyfillScripts(context: HtmlProps, props: OriginProps) {
   const {
     assetPrefix,
     buildManifest,
-    assetQueryString,
+    scriptAssetQueryString,
     disableOptimizedLoading,
     crossOrigin,
   } = context
@@ -89,7 +89,7 @@ function getPolyfillScripts(context: HtmlProps, props: OriginProps) {
         noModule={true}
         src={`${assetPrefix}/_next/${encodeURIPath(
           polyfill
-        )}${assetQueryString}`}
+        )}${scriptAssetQueryString}`}
       />
     ))
 }
@@ -107,7 +107,7 @@ function getDynamicChunks(
     dynamicImports,
     assetPrefix,
     isDevelopment,
-    assetQueryString,
+    scriptAssetQueryString,
     disableOptimizedLoading,
     crossOrigin,
   } = context
@@ -120,7 +120,7 @@ function getDynamicChunks(
         async={!isDevelopment && disableOptimizedLoading}
         defer={!disableOptimizedLoading}
         key={file}
-        src={`${assetPrefix}/_next/${encodeURIPath(file)}${assetQueryString}`}
+        src={`${assetPrefix}/_next/${encodeURIPath(file)}${scriptAssetQueryString}`}
         nonce={props.nonce}
         crossOrigin={props.crossOrigin || crossOrigin}
       />
@@ -137,8 +137,8 @@ function getScripts(
     assetPrefix,
     buildManifest,
     isDevelopment,
-    assetQueryString,
-    mutableAssetQueryString,
+    scriptAssetQueryString,
+    scriptMutableAssetQueryString,
     disableOptimizedLoading,
     crossOrigin,
   } = context
@@ -152,8 +152,8 @@ function getScripts(
     // static/chunks/51e975e7b637a580.js should use the immutable id, while
     // static/Yj152X97rfGgF7NPcJEZs/_ssgManifest.js should use the deployment id
     const query = file.startsWith('static/chunks')
-      ? assetQueryString
-      : mutableAssetQueryString
+      ? scriptAssetQueryString
+      : scriptMutableAssetQueryString
     return (
       <script
         key={file}
@@ -452,7 +452,7 @@ export class Head extends React.Component<HeadProps> {
   }
 
   getPreloadDynamicChunks() {
-    const { dynamicImports, assetPrefix, assetQueryString, crossOrigin } =
+    const { dynamicImports, assetPrefix, scriptAssetQueryString, crossOrigin } =
       this.context
 
     return (
@@ -468,7 +468,7 @@ export class Head extends React.Component<HeadProps> {
               key={file}
               href={`${assetPrefix}/_next/${encodeURIPath(
                 file
-              )}${assetQueryString}`}
+              )}${scriptAssetQueryString}`}
               as="script"
               nonce={this.props.nonce}
               crossOrigin={this.props.crossOrigin || crossOrigin}
@@ -481,7 +481,7 @@ export class Head extends React.Component<HeadProps> {
   }
 
   getPreloadMainLinks(files: DocumentFiles): JSX.Element[] | null {
-    const { assetPrefix, assetQueryString, scriptLoader, crossOrigin } =
+    const { assetPrefix, scriptAssetQueryString, scriptLoader, crossOrigin } =
       this.context
     const preloadFiles = files.allFiles.filter((file: string) => {
       return file.endsWith('.js')
@@ -505,7 +505,7 @@ export class Head extends React.Component<HeadProps> {
           rel="preload"
           href={`${assetPrefix}/_next/${encodeURIPath(
             file
-          )}${assetQueryString}`}
+          )}${scriptAssetQueryString}`}
           as="script"
           crossOrigin={this.props.crossOrigin || crossOrigin}
         />
@@ -871,7 +871,7 @@ export class NextScript extends React.Component<OriginProps> {
       buildManifest,
       unstable_runtimeJS,
       docComponentsRendered,
-      assetQueryString,
+      scriptAssetQueryString,
       disableOptimizedLoading,
       crossOrigin,
     } = this.context
@@ -899,7 +899,7 @@ export class NextScript extends React.Component<OriginProps> {
                 key={file}
                 src={`${assetPrefix}/_next/${encodeURIPath(
                   file
-                )}${assetQueryString}`}
+                )}${scriptAssetQueryString}`}
                 nonce={this.props.nonce}
                 crossOrigin={this.props.crossOrigin || crossOrigin}
               />

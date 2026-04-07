@@ -483,6 +483,17 @@ export async function renderToHTMLImpl(
     (sharedContext.clientAssetToken
       ? `${baseAssetQueryString ? '&' : '?'}dpl=${sharedContext.clientAssetToken}`
       : '')
+  // Script tags should not include the ?ts= cache-busting parameter because
+  // the Turbopack runtime infers ASSET_SUFFIX from the script's query string,
+  // which then leaks onto static asset URLs (e.g. images) causing next/image
+  // validation errors. The ?ts= workaround is only needed for CSS resources
+  // (Safari preload cache bug: https://bugs.webkit.org/show_bug.cgi?id=187726).
+  const scriptAssetQueryString = sharedContext.clientAssetToken
+    ? `?dpl=${sharedContext.clientAssetToken}`
+    : ''
+  const scriptMutableAssetQueryString = sharedContext.deploymentId
+    ? `?dpl=${sharedContext.deploymentId}`
+    : ''
   const metadata: PagesRenderResultMetadata = {
     assetQueryString,
     mutableAssetQueryString,
@@ -1532,6 +1543,8 @@ export async function renderToHTMLImpl(
     unstable_JsPreload: pageConfig.unstable_JsPreload,
     assetQueryString: assetQueryString || '',
     mutableAssetQueryString: mutableAssetQueryString || '',
+    scriptAssetQueryString: scriptAssetQueryString || '',
+    scriptMutableAssetQueryString: scriptMutableAssetQueryString || '',
     scriptLoader,
     locale,
     disableOptimizedLoading,
