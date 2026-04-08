@@ -65,6 +65,15 @@ function getDocumentFiles(
   }
 }
 
+/**
+ * Joins two optional query strings (each may be empty or start with "?").
+ */
+function joinQueryStrings(a: string, b: string): string {
+  if (!a) return b
+  if (!b) return a
+  return a + '&' + b.slice(1)
+}
+
 function getPolyfillScripts(context: HtmlProps, props: OriginProps) {
   // polyfills.js has to be rendered as nomodule without async
   // It also has to be the first script to load
@@ -384,7 +393,8 @@ export class Head extends React.Component<HeadProps> {
   getCssLinks(files: DocumentFiles): JSX.Element[] | null {
     const {
       assetPrefix,
-      cssAssetQueryString,
+      assetQueryString,
+      safariCacheBuster,
       dynamicImports,
       dynamicCssManifest,
       crossOrigin,
@@ -422,7 +432,7 @@ export class Head extends React.Component<HeadProps> {
             rel="preload"
             href={`${assetPrefix}/_next/${encodeURIPath(
               file
-            )}${cssAssetQueryString}`}
+            )}${joinQueryStrings(safariCacheBuster, assetQueryString)}`}
             as="style"
             crossOrigin={this.props.crossOrigin || crossOrigin}
           />
@@ -436,7 +446,7 @@ export class Head extends React.Component<HeadProps> {
           rel="stylesheet"
           href={`${assetPrefix}/_next/${encodeURIPath(
             file
-          )}${cssAssetQueryString}`}
+          )}${joinQueryStrings(safariCacheBuster, assetQueryString)}`}
           crossOrigin={this.props.crossOrigin || crossOrigin}
           data-n-g={isUnmanagedFile ? undefined : isSharedFile ? '' : undefined}
           data-n-p={
@@ -589,7 +599,8 @@ export class Head extends React.Component<HeadProps> {
       optimizeCss,
       assetPrefix,
       nextFontManifest,
-      cssAssetQueryString,
+      assetQueryString,
+      safariCacheBuster,
     } = this.context
 
     const disableRuntimeJS = unstable_runtimeJS === false
@@ -659,7 +670,7 @@ export class Head extends React.Component<HeadProps> {
       nextFontManifest,
       dangerousAsPath,
       assetPrefix,
-      cssAssetQueryString
+      joinQueryStrings(safariCacheBuster, assetQueryString)
     )
 
     const tracingMetadata = getTracedMetadata(

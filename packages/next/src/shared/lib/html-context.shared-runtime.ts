@@ -31,7 +31,7 @@ export type HtmlProps = {
   unstable_JsPreload?: false
   assetQueryString: string
   mutableAssetQueryString: string
-  cssAssetQueryString: string
+  safariCacheBuster: string
   scriptLoader: {
     afterInteractive?: string[]
     beforeInteractive?: any[]

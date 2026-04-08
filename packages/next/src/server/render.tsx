@@ -465,13 +465,13 @@ export async function renderToHTMLImpl(
   // infers ASSET_SUFFIX from the executing script's query string and leaks it
   // onto all static asset URLs (including images), causing next/image validation
   // errors. See https://github.com/vercel/next.js/issues/92118.
-  let cssTimestampParam =
+  let safariCacheBuster =
     (process.env.__NEXT_DEV_SERVER && renderOpts.assetQueryString) || ''
 
-  if (process.env.__NEXT_DEV_SERVER && !cssTimestampParam) {
+  if (process.env.__NEXT_DEV_SERVER && !safariCacheBuster) {
     const userAgent = (req.headers['user-agent'] || '').toLowerCase()
     if (userAgent.includes('safari') && !userAgent.includes('chrome')) {
-      cssTimestampParam = `?ts=${Date.now()}`
+      safariCacheBuster = `?ts=${Date.now()}`
     }
   }
 
@@ -481,19 +481,16 @@ export async function renderToHTMLImpl(
   const assetQueryString = sharedContext.clientAssetToken
     ? `?dpl=${sharedContext.clientAssetToken}`
     : ''
-  // CSS and font resources include the ?ts= timestamp for Safari's preload
-  // cache-busting, in addition to the regular deployment token.
-  const cssAssetQueryString =
-    cssTimestampParam +
-    (sharedContext.clientAssetToken
-      ? `${cssTimestampParam ? '&' : '?'}dpl=${sharedContext.clientAssetToken}`
-      : '')
   const metadata: PagesRenderResultMetadata = {
-    assetQueryString: cssAssetQueryString,
+    assetQueryString:
+      safariCacheBuster +
+      (sharedContext.clientAssetToken
+        ? `${safariCacheBuster ? '&' : '?'}dpl=${sharedContext.clientAssetToken}`
+        : ''),
     mutableAssetQueryString:
-      cssTimestampParam +
+      safariCacheBuster +
       (sharedContext.deploymentId
-        ? `${cssTimestampParam ? '&' : '?'}dpl=${sharedContext.deploymentId}`
+        ? `${safariCacheBuster ? '&' : '?'}dpl=${sharedContext.deploymentId}`
         : ''),
   }
 
@@ -1541,7 +1538,7 @@ export async function renderToHTMLImpl(
     unstable_JsPreload: pageConfig.unstable_JsPreload,
     assetQueryString: assetQueryString || '',
     mutableAssetQueryString: mutableAssetQueryString || '',
-    cssAssetQueryString: cssAssetQueryString || '',
+    safariCacheBuster: safariCacheBuster || '',
     scriptLoader,
     locale,
     disableOptimizedLoading,
