@@ -458,45 +458,43 @@ export async function renderToHTMLImpl(
   // Adds support for reading `cookies` in `getServerSideProps` when SSR.
   setLazyProp({ req: req as any }, 'cookies', getCookieParser(req.headers))
 
-  let baseAssetQueryString =
+  // The ?ts= cache-busting parameter is a workaround for a Safari bug
+  // (https://bugs.webkit.org/show_bug.cgi?id=187726) where preloaded CSS
+  // resources are cached and not re-fetched on HMR. It must only be applied to
+  // CSS and font assets — not to script tags — because the Turbopack runtime
+  // infers ASSET_SUFFIX from the executing script's query string and leaks it
+  // onto all static asset URLs (including images), causing next/image validation
+  // errors. See https://github.com/vercel/next.js/issues/92118.
+  let cssTimestampParam =
     (process.env.__NEXT_DEV_SERVER && renderOpts.assetQueryString) || ''
 
-  if (process.env.__NEXT_DEV_SERVER && !baseAssetQueryString) {
+  if (process.env.__NEXT_DEV_SERVER && !cssTimestampParam) {
     const userAgent = (req.headers['user-agent'] || '').toLowerCase()
     if (userAgent.includes('safari') && !userAgent.includes('chrome')) {
-      // In dev we invalidate the cache by appending a timestamp to the resource URL.
-      // This is a workaround to fix https://github.com/vercel/next.js/issues/5860
-      // TODO: remove this workaround when https://bugs.webkit.org/show_bug.cgi?id=187726 is fixed.
-      // Note: The workaround breaks breakpoints on reload since the script url always changes,
-      // so we only apply it to Safari.
-      baseAssetQueryString = `?ts=${Date.now()}`
+      cssTimestampParam = `?ts=${Date.now()}`
     }
   }
 
-  const mutableAssetQueryString =
-    baseAssetQueryString +
-    (sharedContext.deploymentId
-      ? `${baseAssetQueryString ? '&' : '?'}dpl=${sharedContext.deploymentId}`
-      : '')
-  const assetQueryString =
-    baseAssetQueryString +
-    (sharedContext.clientAssetToken
-      ? `${baseAssetQueryString ? '&' : '?'}dpl=${sharedContext.clientAssetToken}`
-      : '')
-  // Script tags should not include the ?ts= cache-busting parameter because
-  // the Turbopack runtime infers ASSET_SUFFIX from the script's query string,
-  // which then leaks onto static asset URLs (e.g. images) causing next/image
-  // validation errors. The ?ts= workaround is only needed for CSS resources
-  // (Safari preload cache bug: https://bugs.webkit.org/show_bug.cgi?id=187726).
-  const scriptAssetQueryString = sharedContext.clientAssetToken
-    ? `?dpl=${sharedContext.clientAssetToken}`
-    : ''
-  const scriptMutableAssetQueryString = sharedContext.deploymentId
+  const mutableAssetQueryString = sharedContext.deploymentId
     ? `?dpl=${sharedContext.deploymentId}`
     : ''
+  const assetQueryString = sharedContext.clientAssetToken
+    ? `?dpl=${sharedContext.clientAssetToken}`
+    : ''
+  // CSS and font resources include the ?ts= timestamp for Safari's preload
+  // cache-busting, in addition to the regular deployment token.
+  const cssAssetQueryString =
+    cssTimestampParam +
+    (sharedContext.clientAssetToken
+      ? `${cssTimestampParam ? '&' : '?'}dpl=${sharedContext.clientAssetToken}`
+      : '')
   const metadata: PagesRenderResultMetadata = {
-    assetQueryString,
-    mutableAssetQueryString,
+    assetQueryString: cssAssetQueryString,
+    mutableAssetQueryString:
+      cssTimestampParam +
+      (sharedContext.deploymentId
+        ? `${cssTimestampParam ? '&' : '?'}dpl=${sharedContext.deploymentId}`
+        : ''),
   }
 
   // don't modify original query object
@@ -1543,8 +1541,7 @@ export async function renderToHTMLImpl(
     unstable_JsPreload: pageConfig.unstable_JsPreload,
     assetQueryString: assetQueryString || '',
     mutableAssetQueryString: mutableAssetQueryString || '',
-    scriptAssetQueryString: scriptAssetQueryString || '',
-    scriptMutableAssetQueryString: scriptMutableAssetQueryString || '',
+    cssAssetQueryString: cssAssetQueryString || '',
     scriptLoader,
     locale,
     disableOptimizedLoading,
